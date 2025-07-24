@@ -11,11 +11,19 @@
 </head>
 <body>
   <h1>YouTube Cutter</h1>
-  <form method="post">
-    <label>Pause (seconds): <input name="pause" required></label><br><br>
-    <label>Fade (seconds): <input name="fade" required></label><br><br>
+  <form method="post" enctype="multipart/form-data">
+    <label>Pause (seconds):
+      <input name="pause" required value="{{ pause|default('') }}">
+    </label><br><br>
+    <label>Fade (seconds):
+      <input name="fade" required value="{{ fade|default('') }}">
+    </label><br><br>
+    <input type="hidden" name="job_id" value="{{ job_id|default('') }}">
+    <label>Upload MP3 files (optional):
+      <input type="file" name="files" accept=".mp3" multiple>
+    </label><br><br>
     <label>Segments (one per line, file/start/end):</label><br>
-    <textarea name="segments" placeholder="https://youtu.be/... 00:39 01:06"></textarea><br>
+    <textarea name="segments" rows="6">{{ segments|default('') }}</textarea><br>
     <button type="submit">Run</button>
     <button type="reset">Clear</button>
   </form>
@@ -28,5 +36,22 @@
   {% if download_url %}
     <p><a href="{{ download_url }}">Download result</a></p>
   {% endif %}
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var fileInput = document.querySelector('input[name="files"]');
+      var textarea = document.querySelector('textarea[name="segments"]');
+      fileInput.addEventListener('change', function() {
+        if (this.files.length > 9) {
+          alert('Please select at most 9 files');
+          this.value = '';
+          textarea.value = '';
+          return;
+        }
+        var names = Array.from(this.files).map(function(f) { return f.name; });
+        textarea.value = names.join('\n');
+      });
+    });
+  </script>
 </body>
 </html>
