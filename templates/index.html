@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>YouTube Cutter Web UI</title>
+  <style>
+    body { font-family: sans-serif; margin: 2em; }
+    textarea { width: 100%; height: 6em; }
+    pre { background: #f0f0f0; padding: 1em; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>YouTube Cutter</h1>
+  <form method="post">
+    <label>Pause (seconds): <input name="pause" required></label><br><br>
+    <label>Fade (seconds): <input name="fade" required></label><br><br>
+    <label>Segments (one per line, file/start/end):</label><br>
+    <textarea name="segments" placeholder="https://youtu.be/... 00:39 01:06"></textarea><br>
+    <button type="submit">Run</button>
+    <button type="reset">Clear</button>
+  </form>
+
+  {% if logs %}
+    <h2>Logs</h2>
+    <pre>{{ logs }}</pre>
+  {% endif %}
+
+  {% if download_url %}
+    <p><a href="{{ download_url }}">Download result</a></p>
+  {% endif %}
+</body>
+</html>

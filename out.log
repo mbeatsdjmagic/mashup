@@ -1,0 +1,49 @@
+Processing segment 1: https://youtu.be/k4yXQkG2s1E?si=TOVg4myDcPQEoEdU (39.0s to 66.0s)
+Traceback (most recent call last):
+  File "/Users/tkmaii3/picode/youtube_cutter.py", line 155, in <module>
+    main()
+    ~~~~^^
+  File "/Users/tkmaii3/picode/youtube_cutter.py", line 101, in main
+    download_video(src, local_path)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/tkmaii3/picode/youtube_cutter.py", line 52, in download_video
+    stream = yt.streams.filter(progressive=True, file_extension='mp4') \
+             ^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/pytube/__main__.py", line 296, in streams
+    return StreamQuery(self.fmt_streams)
+                       ^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/pytube/__main__.py", line 176, in fmt_streams
+    stream_manifest = extract.apply_descrambler(self.streaming_data)
+                                                ^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/pytube/__main__.py", line 157, in streaming_data
+    if 'streamingData' in self.vid_info:
+                          ^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/pytube/__main__.py", line 246, in vid_info
+    innertube_response = innertube.player(self.video_id)
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/pytube/innertube.py", line 448, in player
+    return self._call_api(endpoint, query, self.base_data)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/pytube/innertube.py", line 390, in _call_api
+    response = request._execute_request(
+        endpoint_url,
+    ...<2 lines>...
+        data=data
+    )
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/pytube/request.py", line 37, in _execute_request
+    return urlopen(request, timeout=timeout)  # nosec
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/urllib/request.py", line 189, in urlopen
+    return opener.open(url, data, timeout)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/urllib/request.py", line 495, in open
+    response = meth(req, response)
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/urllib/request.py", line 604, in http_response
+    response = self.parent.error(
+        'http', request, response, code, msg, hdrs)
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/urllib/request.py", line 533, in error
+    return self._call_chain(*args)
+           ~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/urllib/request.py", line 466, in _call_chain
+    result = func(*args)
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/urllib/request.py", line 613, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 400: Bad Request
