@@ -78,6 +78,26 @@
     <p><a href="{{ multi_download_url_audio }}">Download ZIP of audio files</a></p>
   {% endif %}
 
+  <hr>
+  <h2>Spotify Multi File Audio Downloader</h2>
+  <form method="post" action="{{ url_for('multi_spotify_download') }}">
+    <label>Spotify URLs (one per line):</label><br>
+    <textarea name="multi_urls_spotify" rows="6">{{ multi_urls_spotify|default('') }}</textarea><br>
+    <button type="submit">Download Spotify Audio &amp; ZIP</button>
+  </form>
+  <div id="multi-status-spotify" style="display:none; margin-top:0.5em; color: #00529B;">
+    <strong>Downloading Spotify audio—please wait...</strong>
+  </div>
+
+  {% if multi_logs_spotify %}
+    <h3>Spotify Downloader Logs</h3>
+    <pre>{{ multi_logs_spotify }}</pre>
+  {% endif %}
+
+  {% if multi_download_url_spotify %}
+    <p><a href="{{ multi_download_url_spotify }}">Download ZIP of Spotify audio files</a></p>
+  {% endif %}
+
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       // MP3 uploader -> segments autofill
@@ -111,6 +131,17 @@
         audioForm.addEventListener('submit', function() {
           console.log('Submitting multi-audio-download, URLs:', document.querySelector('textarea[name="multi_urls_audio"]').value);
           var status = document.getElementById('multi-status-audio');
+          if (status) { status.style.display = 'block'; }
+          var btn = this.querySelector('button[type="submit"]');
+          if (btn) { btn.disabled = true; }
+        });
+      }
+
+      var spotifyForm = document.querySelector('form[action="{{ url_for('multi_spotify_download') }}"]');
+      if (spotifyForm) {
+        spotifyForm.addEventListener('submit', function() {
+          console.log('Submitting multi-spotify-download, URLs:', document.querySelector('textarea[name="multi_urls_spotify"]').value);
+          var status = document.getElementById('multi-status-spotify');
           if (status) { status.style.display = 'block'; }
           var btn = this.querySelector('button[type="submit"]');
           if (btn) { btn.disabled = true; }

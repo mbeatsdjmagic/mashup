@@ -12,6 +12,7 @@ from werkzeug.utils import secure_filename
 import zipfile
 import re
 import sys
+import urllib.request
 
 # Create outputs directory
 OUTPUT_ROOT = os.path.join(os.path.dirname(__file__), 'outputs')
@@ -37,6 +38,10 @@ def index():
     multi_logs_audio = None
     multi_download_url_audio = None
     multi_urls_audio = ''
+    # multi-downloader spotify state
+    multi_logs_spotify = None
+    multi_download_url_spotify = None
+    multi_urls_spotify = ''
     if request.method == 'POST':
         pause = request.form.get('pause', '').strip()
         fade = request.form.get('fade', '').strip()
@@ -107,6 +112,9 @@ def index():
         multi_logs_audio=multi_logs_audio,
         multi_download_url_audio=multi_download_url_audio,
         multi_urls_audio=multi_urls_audio,
+        multi_logs_spotify=multi_logs_spotify,
+        multi_download_url_spotify=multi_download_url_spotify,
+        multi_urls_spotify=multi_urls_spotify,
     )
 
 
@@ -228,7 +236,82 @@ def multi_audio_download():
         multi_logs=None, multi_download_url=None, multi_urls='',
         multi_logs_audio=multi_logs_audio,
         multi_download_url_audio=multi_download_url_audio,
-        multi_urls_audio=multi_urls_audio,
+    multi_urls_audio=multi_urls_audio,
+    )
+
+@app.route('/multi-spotify', methods=['GET', 'POST'])
+def multi_spotify_download():
+    """Download multiple Spotify URLs as audio and zip the results."""
+    if request.method == 'GET':
+        print("[multi_spotify_download] GET -- redirecting to index", file=sys.stderr)
+        return redirect(url_for('index'))
+
+    print("[multi_spotify_download] POST -- starting spotify download", file=sys.stderr)
+    job_id = uuid.uuid4().hex
+    out_dir = os.path.join(OUTPUT_ROOT, job_id)
+    os.makedirs(out_dir, exist_ok=True)
+
+    multi_urls_spotify = request.form.get('multi_urls_spotify', '').strip()
+    urls = [u.strip() for u in multi_urls_spotify.splitlines() if u.strip()]
+    multi_logs_spotify = ''
+
+    for url in urls:
+        try:
+            cmd = [
+                'yt-dlp', '-x', '--audio-format', 'mp3',
+                '-o', os.path.join(out_dir, '%(title)s.%(ext)s'),
+                url,
+            ]
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT, text=True)
+            out, _ = proc.communicate()
+            multi_logs_spotify += out + '\n'
+        except Exception as exc:
+            multi_logs_spotify += f"Error downloading {url}: {exc}\n"
+
+    zip_name = 'spotify_audio_multi.zip'
+    zip_path = os.path.join(out_dir, zip_name)
+    # Check downloaded mp3s, if empty try preview-url fallback
+    audio_files = [f for f in os.listdir(out_dir) if f.lower().endswith('.mp3')]
+    if not audio_files:
+        # Try spotdl per-URL if available
+        try:
+            import spotdl  # noqa: F401
+            multi_logs_spotify += "Attempting full-track download via spotdl...\n"
+            for url in urls:
+                try:
+                    subprocess.run(['spotdl', '--output', out_dir, url], check=True)
+                    multi_logs_spotify += f"Downloaded full track for {url}\n"
+                except subprocess.CalledProcessError as exc:
+                    multi_logs_spotify += f"spotdl failed for {url}: {exc}\n"
+            audio_files = [f for f in os.listdir(out_dir) if f.lower().endswith('.mp3')]
+        except ModuleNotFoundError:
+            multi_logs_spotify += "spotdl not installed; falling back to preview snippet...\n"
+        except Exception as exc:
+            multi_logs_spotify += f"spotdl download error: {exc}\n"
+    if not audio_files:
+        multi_logs_spotify += "No audio files downloaded; could be DRM-protected.\n"
+    try:
+        with zipfile.ZipFile(zip_path, 'w') as zf:
+            for fname in os.listdir(out_dir):
+                if fname == zip_name:
+                    continue
+                base, ext = os.path.splitext(fname)
+                safe_base = re.sub(r'[^0-9A-Za-z]', '-', base)
+                safe_name = f"{safe_base}{ext}"
+                zf.write(os.path.join(out_dir, fname), arcname=safe_name)
+    except Exception as exc:
+        multi_logs_spotify += f"Error creating zip: {exc}\n"
+
+    multi_download_url_spotify = f'/download/{job_id}/{zip_name}'
+    return render_template(
+        'index.html', job_id='', logs=None, download_url=None,
+        pause='', fade='', segments='',
+        multi_logs=None, multi_download_url=None, multi_urls='',
+        multi_logs_audio=None, multi_download_url_audio=None, multi_urls_audio='',
+        multi_logs_spotify=multi_logs_spotify,
+        multi_download_url_spotify=multi_download_url_spotify,
+        multi_urls_spotify=multi_urls_spotify,
     )
 
 if __name__ == '__main__':
