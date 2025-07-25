@@ -7,8 +7,11 @@ and serves the resulting output file for download.
 import os
 import uuid
 import subprocess
-from flask import Flask, render_template, request, send_from_directory
+from flask import Flask, render_template, request, send_from_directory, redirect, url_for
 from werkzeug.utils import secure_filename
+import zipfile
+import re
+import sys
 
 # Create outputs directory
 OUTPUT_ROOT = os.path.join(os.path.dirname(__file__), 'outputs')
@@ -21,11 +24,19 @@ app = Flask(__name__)
 def index():
     logs = None
     download_url = None
-    # retain form values (and job ID) across requests
+    # retain form values across requests
     job_id = ''
     pause = ''
     fade = ''
     segments = ''
+    # multi-downloader video state
+    multi_logs = None
+    multi_download_url = None
+    multi_urls = ''
+    # multi-downloader audio state
+    multi_logs_audio = None
+    multi_download_url_audio = None
+    multi_urls_audio = ''
     if request.method == 'POST':
         pause = request.form.get('pause', '').strip()
         fade = request.form.get('fade', '').strip()
@@ -90,6 +101,12 @@ def index():
         pause=pause,
         fade=fade,
         segments=segments,
+        multi_logs=multi_logs,
+        multi_download_url=multi_download_url,
+        multi_urls=multi_urls,
+        multi_logs_audio=multi_logs_audio,
+        multi_download_url_audio=multi_download_url_audio,
+        multi_urls_audio=multi_urls_audio,
     )
 
 
@@ -98,6 +115,121 @@ def download(job_id, filename):
     dirpath = os.path.join(OUTPUT_ROOT, job_id)
     return send_from_directory(dirpath, filename, as_attachment=True)
 
+
+@app.route('/multi-download', methods=['GET', 'POST'])
+def multi_download():
+    """Download multiple YouTube URLs and zip the results."""
+    # GET: redirect back to main page
+    if request.method == 'GET':
+        print("[multi_download] GET -- redirecting to index", file=sys.stderr)
+        return redirect(url_for('index'))
+
+    # New job directory
+    job_id = uuid.uuid4().hex
+    out_dir = os.path.join(OUTPUT_ROOT, job_id)
+    os.makedirs(out_dir, exist_ok=True)
+
+    print("[multi_download] POST -- starting download", file=sys.stderr)
+    # Read URLs list
+    multi_urls = request.form.get('multi_urls', '').strip()
+    urls = [u.strip() for u in multi_urls.splitlines() if u.strip()]
+    multi_logs = ''
+
+    # Download each URL via yt-dlp
+    for url in urls:
+        try:
+            cmd = ['yt-dlp', '-o', os.path.join(out_dir, '%(title)s.%(ext)s'), url]
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT, text=True)
+            out, _ = proc.communicate()
+            multi_logs += out + '\n'
+        except Exception as exc:
+            multi_logs += f"Error downloading {url}: {exc}\n"
+
+    # Zip the downloaded files
+    zip_name = 'youtube_multi.zip'
+    zip_path = os.path.join(out_dir, zip_name)
+    try:
+        with zipfile.ZipFile(zip_path, 'w') as zf:
+            for fname in os.listdir(out_dir):
+                if fname == zip_name:
+                    continue
+                # Normalize filename: keep only alphanumeric in base, replace others with hyphen; preserve extension dot
+                base, ext = os.path.splitext(fname)
+                safe_base = re.sub(r'[^0-9A-Za-z]', '-', base)
+                safe_name = f"{safe_base}{ext}"
+                zf.write(os.path.join(out_dir, fname), arcname=safe_name)
+    except Exception as exc:
+        multi_logs += f"Error creating zip: {exc}\n"
+
+    multi_download_url = f'/download/{job_id}/{zip_name}'
+    # Render main page with multi-downloader context
+    return render_template(
+        'index.html',
+        job_id='', logs=None, download_url=None,
+        pause='', fade='', segments='',
+        multi_logs=multi_logs,
+        multi_download_url=multi_download_url,
+        multi_urls=multi_urls,
+        # reset audio downloader panel
+        multi_logs_audio=None,
+        multi_download_url_audio=None,
+        multi_urls_audio='',
+    )
+
+@app.route('/multi-audio', methods=['GET', 'POST'])
+def multi_audio_download():
+    """Download multiple YouTube URLs as MP3 and zip the results."""
+    if request.method == 'GET':
+        print("[multi_audio_download] GET -- redirecting to index", file=sys.stderr)
+        return redirect(url_for('index'))
+
+    print("[multi_audio_download] POST -- starting audio download", file=sys.stderr)
+    job_id = uuid.uuid4().hex
+    out_dir = os.path.join(OUTPUT_ROOT, job_id)
+    os.makedirs(out_dir, exist_ok=True)
+
+    multi_urls_audio = request.form.get('multi_urls_audio', '').strip()
+    urls = [u.strip() for u in multi_urls_audio.splitlines() if u.strip()]
+    multi_logs_audio = ''
+
+    for url in urls:
+        try:
+            cmd = [
+                'yt-dlp', '-x', '--audio-format', 'mp3',
+                '-o', os.path.join(out_dir, '%(title)s.%(ext)s'),
+                url,
+            ]
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT, text=True)
+            out, _ = proc.communicate()
+            multi_logs_audio += out + '\n'
+        except Exception as exc:
+            multi_logs_audio += f"Error downloading {url}: {exc}\n"
+
+    zip_name = 'youtube_audio_multi.zip'
+    zip_path = os.path.join(out_dir, zip_name)
+    try:
+        with zipfile.ZipFile(zip_path, 'w') as zf:
+            for fname in os.listdir(out_dir):
+                if fname == zip_name:
+                    continue
+                base, ext = os.path.splitext(fname)
+                safe_base = re.sub(r'[^0-9A-Za-z]', '-', base)
+                safe_name = f"{safe_base}{ext}"
+                zf.write(os.path.join(out_dir, fname), arcname=safe_name)
+    except Exception as exc:
+        multi_logs_audio += f"Error creating zip: {exc}\n"
+
+    multi_download_url_audio = f'/download/{job_id}/{zip_name}'
+    return render_template(
+        'index.html', job_id='', logs=None, download_url=None,
+        pause='', fade='', segments='',
+        multi_logs=None, multi_download_url=None, multi_urls='',
+        multi_logs_audio=multi_logs_audio,
+        multi_download_url_audio=multi_download_url_audio,
+        multi_urls_audio=multi_urls_audio,
+    )
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8020, debug=True)
