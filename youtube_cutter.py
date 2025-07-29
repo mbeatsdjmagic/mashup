@@ -55,11 +55,18 @@ def parse_time(t):
 
 
 def download_video(url, output_path):
-    # strip URL query parameters (e.g. '?si=...') and normalize URL
-    clean_url = url.split('?', 1)[0]
-    if 'youtu.be/' in clean_url:
-        vid = clean_url.rsplit('/', 1)[1]
+    # normalize YouTube URLs: extract video ID and rebuild watch URL
+    from urllib.parse import urlparse, parse_qs
+    parsed = urlparse(url)
+    qs = parse_qs(parsed.query)
+    if 'v' in qs:
+        vid = qs['v'][0]
         clean_url = f'https://www.youtube.com/watch?v={vid}'
+    elif 'youtu.be' in parsed.netloc:
+        vid = parsed.path.rsplit('/', 1)[-1]
+        clean_url = f'https://www.youtube.com/watch?v={vid}'
+    else:
+        clean_url = url
     # attempt pytube download (video->audio)
     try:
         yt = YouTube(clean_url)
@@ -106,18 +113,34 @@ def main():
     clips = []
     temp_dir = tempfile.mkdtemp(prefix='youtube_cutter_')
     try:
-        # Parse segments from command-line triples
+        # Parse segments: file_or_URL [start] [end] per segment; allow missing start/end
+        import re
+        def is_time_token(tok):
+            return bool(re.match(r'^\d+(?::\d+)*$', tok))
+
         entries = []
-        if len(args.segments) % 3 != 0:
-            sys.exit("Segments must be triples: file1 start1 end1 [file2 start2 end2 ...]")
-        for i in range(0, len(args.segments), 3):
-            entries.append((args.segments[i], args.segments[i+1], args.segments[i+2]))
+        i = 0
+        while i < len(args.segments):
+            src = args.segments[i]
+            t0 = None
+            t1 = None
+            # next token is a start time if it matches time format
+            if i+1 < len(args.segments) and is_time_token(args.segments[i+1]):
+                t0 = args.segments[i+1]
+                i += 1
+                # next token is end time if also time
+                if i+1 < len(args.segments) and is_time_token(args.segments[i+1]):
+                    t1 = args.segments[i+1]
+                    i += 1
+            entries.append((src, t0, t1))
+            i += 1
 
         audio_mode = None
         for idx, (src, t0, t1) in enumerate(entries, start=1):
-            start = parse_time(t0)
-            end = parse_time(t1)
-            print(f"Processing segment {idx}: {src} ({start}s to {end}s)")
+            # Determine start/end times (default start=0, end=clip duration)
+            start = parse_time(t0) if t0 else 0.0
+            end = parse_time(t1) if t1 else None
+            print(f"Processing segment {idx}: {src} (from {start}s to {end or 'end'}s)")
             # Fetch YouTube sources; always extract audio from URLs
             is_url = src.startswith(('http://', 'https://'))
             if is_url:
@@ -130,10 +153,13 @@ def main():
             # Determine audio vs video segments
             if is_url or src.lower().endswith(('.mp3', '.wav', '.aac', '.m4a', '.flac', '.ogg')):
                 # audio-only (use subclipped for AudioFileClip)
-                clip = AudioFileClip(src).subclipped(start, end)
+                audio_clip = AudioFileClip(src)
+                # fill end with clip duration if missing
+                clip = audio_clip.subclipped(start, end or audio_clip.duration)
                 mode = 'audio'
             else:
-                clip = VideoFileClip(src).subclip(start, end)
+                video_clip = VideoFileClip(src)
+                clip = video_clip.subclip(start, end or video_clip.duration)
                 mode = 'video'
             # Set audio/video mode consistency
             if audio_mode is None:

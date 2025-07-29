@@ -11,7 +11,6 @@ from flask import Flask, render_template, request, send_from_directory, redirect
 from werkzeug.utils import secure_filename
 from mutagen.easyid3 import EasyID3
 from mutagen.id3 import ID3NoHeaderError
-from mutagen.mp3 import MP3
 import zipfile
 import re
 import sys
@@ -75,36 +74,11 @@ def index():
             existing = existing[:9]
         uploaded_names = existing
 
-        # Build args list, substituting uploaded files paths; allow missing times for full-length audio
+        # Build args list (file_or_URL [start] [end]); missing times will be handled by the cutter
         args = [pause, fade]
         for line in segments_text:
             parts = line.strip().split()
-            if not parts:
-                continue
-            name = parts[0]
-            # Local uploaded MP3: default times if missing
-            if name in uploaded_names:
-                src = os.path.join(out_dir, name)
-                # get duration
-                try:
-                    dur = MP3(src).info.length
-                except Exception:
-                    dur = None
-                if len(parts) == 1:
-                    start = '0'
-                    end = str(int(dur)) if dur is not None else ''
-                elif len(parts) == 2:
-                    start = parts[1]
-                    end = str(int(dur)) if dur is not None else ''
-                else:
-                    start = parts[1]
-                    end = parts[2]
-                if end:
-                    args.extend([src, start, end])
-            else:
-                # remote URL or external file: require three fields
-                if len(parts) != 3:
-                    continue
+            if parts:
                 args.extend(parts)
 
         # Base path for output file (filename will be output_name.ext)
