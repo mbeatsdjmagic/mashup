@@ -3,18 +3,22 @@
 Cut and concatenate media clips (local files or YouTube URLs) with optional pauses and fades.
 
 Usage:
-    python youtube_cutter.py <pause> <fade> file1 start1 end1 [file2 start2 end2 ...] [-o output.mp4]
+    python youtube_cutter.py <pause> <start_fade> <fade_out> <fade_in> <end_fade> \
+        file1 [start1] [end1] [file2 [start2] [end2] ...] [-o output.mp4]
     # Note: in zsh, quote URLs containing '?', e.g.:
     #   python youtube_cutter.py 2 2 \
     #     'https://youtu.be/k4yXQkG2s1E?si=...' 00:39 01:06 \
     #     'https://youtu.be/YxWlaYCA8MU?si=...' 01:12 01:30
 
 Arguments:
-  pause        Pause duration in seconds between clips
-  fade         Fade‑in/out duration in seconds for each clip
-  fileX        Path or URL to media file
-  startX       Start time (seconds or mm:ss) for fileX
-  endX         End time (seconds or mm:ss) for fileX
+  pause           Pause duration in seconds between clips
+  start_fade      Fade‑in duration in seconds at beginning of first clip
+  fade_out        Fade‑out duration in seconds in crossfade before next clip
+  fade_in         Fade‑in duration in seconds in crossfade after previous clip
+  end_fade        Fade‑out duration in seconds at end of last clip
+  fileX           Path or URL to media file
+  [startX]        (Optional) Start time (seconds or mm:ss) for fileX; default 0
+  [endX]          (Optional) End time (seconds or mm:ss) for fileX; default clip duration
 
 Options:
   -o, --output  Output filename (default: output.mp4)
@@ -97,12 +101,24 @@ def main():
         help='Pause duration in seconds between clips'
     )
     parser.add_argument(
-        'fade', type=float,
-        help='Fade-in/out duration in seconds for each clip'
+        'start_fade', type=float,
+        help='Fade-in duration in seconds at beginning of first clip'
+    )
+    parser.add_argument(
+        'fade_out', type=float,
+        help='Fade-out duration in seconds in crossfade before next clip'
+    )
+    parser.add_argument(
+        'fade_in', type=float,
+        help='Fade-in duration in seconds in crossfade after previous clip'
+    )
+    parser.add_argument(
+        'end_fade', type=float,
+        help='Fade-out duration in seconds at end of last clip'
     )
     parser.add_argument(
         'segments', nargs='+',
-        help='Segments as triples: file1 start1 end1 [file2 start2 end2 ...]'
+        help='Segments as file [start] [end] triples: file1 [start1] [end1] [file2 [start2] [end2] ...]'
     )
     parser.add_argument(
         '-o', '--output', default='output.mp4',
@@ -136,6 +152,7 @@ def main():
             i += 1
 
         audio_mode = None
+        total = len(entries)
         for idx, (src, t0, t1) in enumerate(entries, start=1):
             # Determine start/end times (default start=0, end=clip duration)
             start = parse_time(t0) if t0 else 0.0
@@ -166,15 +183,25 @@ def main():
                 audio_mode = (mode == 'audio')
             elif audio_mode and mode != 'audio':
                 sys.exit("Cannot mix audio and video segments")
-            # Apply fades
-            if args.fade > 0:
-                if mode == 'audio':
-                    clip = clip.with_effects([
-                        AudioFadeIn(args.fade),
-                        AudioFadeOut(args.fade)
-                    ])
-                else:
-                    clip = clip.fx(AudioFadeIn, args.fade).fx(AudioFadeOut, args.fade)
+            # Apply start/end fades and crossfade between clips
+            if mode == 'audio':
+                if idx == 1 and args.start_fade > 0:
+                    clip = clip.fx(AudioFadeIn, args.start_fade)
+                if idx > 1 and args.fade_in > 0:
+                    clip = clip.fx(AudioFadeIn, args.fade_in)
+                if idx < total and args.fade_out > 0:
+                    clip = clip.fx(AudioFadeOut, args.fade_out)
+                if idx == total and args.end_fade > 0:
+                    clip = clip.fx(AudioFadeOut, args.end_fade)
+            else:
+                if idx == 1 and args.start_fade > 0:
+                    clip = clip.fx(AudioFadeIn, args.start_fade)
+                if idx > 1 and args.fade_in > 0:
+                    clip = clip.fx(AudioFadeIn, args.fade_in)
+                if idx < total and args.fade_out > 0:
+                    clip = clip.fx(AudioFadeOut, args.fade_out)
+                if idx == total and args.end_fade > 0:
+                    clip = clip.fx(AudioFadeOut, args.end_fade)
 
             clips.append(clip)
             # Insert pause if requested
