@@ -37,6 +37,9 @@
   {% endif %}
 
   {% if download_url %}
+    <p>
+      <audio controls style="width:100%;" src="{{ download_url }}"></audio>
+    </p>
     <p><a href="{{ download_url }}">Download result</a></p>
   {% endif %}
 
