@@ -29,10 +29,13 @@ def index():
     download_url = None
     # retain form values across requests
     job_id = ''
-    pause = ''
-    fade = ''
+    pause = '0'
+    start_fade = '0'
+    fade_out = '0'
+    fade_in = '0'
+    end_fade = '0'
     segments = ''
-    output_name = ''
+    output_name = 'audio_cut_join_out'
     # multi-downloader video state
     multi_logs = None
     multi_download_url = None
@@ -121,7 +124,10 @@ def index():
         logs=logs,
         download_url=download_url,
         pause=pause,
-        fade=fade,
+        start_fade=start_fade,
+        fade_out=fade_out,
+        fade_in=fade_in,
+        end_fade=end_fade,
         segments=segments,
         output_name=output_name,
         multi_logs=multi_logs,
