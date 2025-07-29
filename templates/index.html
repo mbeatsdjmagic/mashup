@@ -144,10 +144,22 @@
       // Show progress bar when submitting main form
       var mainForm = document.querySelector('form[enctype]');
       if (mainForm) {
-        mainForm.addEventListener('submit', function() {
-          var bar = document.getElementById('main-progress');
-          if (bar) { bar.removeAttribute('value'); bar.style.display = 'block'; }
-        });
+      mainForm.addEventListener('submit', function() {
+        var bar = document.getElementById('main-progress');
+        if (bar) {
+          // determine total (5s) per segment
+          var count = document.querySelector('textarea[name="segments"]').value
+                       .split(/\r?\n/).filter(Boolean).length;
+          var total = Math.max(count, 1) * 5;
+          bar.max = total;
+          bar.value = 0;
+          bar.style.display = 'block';
+          var t = setInterval(function() {
+            bar.value = Math.min(bar.value + 1, bar.max);
+            if (bar.value >= bar.max) clearInterval(t);
+          }, 1000);
+        }
+      });
       }
       // MP3 uploader -> segments autofill
       var fileInput = document.querySelector('input[name="files"]');
@@ -166,41 +178,74 @@
       // Multi-download form submission log
       var multiForm = document.querySelector('form[action="{{ url_for('multi_download') }}"]');
       if (multiForm) {
-        multiForm.addEventListener('submit', function() {
-          console.log('Submitting multi-download, URLs:', document.querySelector('textarea[name="multi_urls"]').value);
-          var status = document.getElementById('multi-status');
-          if (status) { status.style.display = 'block'; }
-          var bar = document.getElementById('multi-progress');
-          if (bar) { bar.removeAttribute('value'); bar.style.display = 'block'; }
-          var btn = this.querySelector('button[type="submit"]');
-          if (btn) { btn.disabled = true; }
-        });
+      multiForm.addEventListener('submit', function() {
+        console.log('Submitting multi-download, URLs:', document.querySelector('textarea[name="multi_urls"]').value);
+        var status = document.getElementById('multi-status');
+        if (status) { status.style.display = 'block'; }
+        var bar = document.getElementById('multi-progress');
+        if (bar) {
+          var count = document.querySelector('textarea[name="multi_urls"]').value
+                       .split(/\r?\n/).filter(Boolean).length;
+          var total = Math.max(count, 1) * 5;
+          bar.max = total;
+          bar.value = 0;
+          bar.style.display = 'block';
+          var t = setInterval(function() {
+            bar.value = Math.min(bar.value + 1, bar.max);
+            if (bar.value >= bar.max) clearInterval(t);
+          }, 1000);
+        }
+        var btn = this.querySelector('button[type="submit"]');
+        if (btn) { btn.disabled = true; }
+      });
       }
 
       var audioForm = document.querySelector('form[action="{{ url_for('multi_audio_download') }}"]');
       if (audioForm) {
-        audioForm.addEventListener('submit', function() {
-          console.log('Submitting multi-audio-download, URLs:', document.querySelector('textarea[name="multi_urls_audio"]').value);
-          var status = document.getElementById('multi-status-audio');
-          if (status) { status.style.display = 'block'; }
-          var bar = document.getElementById('multi-progress-audio');
-          if (bar) { bar.removeAttribute('value'); bar.style.display = 'block'; }
-          var btn = this.querySelector('button[type="submit"]');
-          if (btn) { btn.disabled = true; }
-        });
+      audioForm.addEventListener('submit', function() {
+        console.log('Submitting multi-audio-download, URLs:', document.querySelector('textarea[name="multi_urls_audio"]').value);
+        var status = document.getElementById('multi-status-audio');
+        if (status) { status.style.display = 'block'; }
+        var bar = document.getElementById('multi-progress-audio');
+        if (bar) {
+          var count = document.querySelector('textarea[name="multi_urls_audio"]').value
+                       .split(/\r?\n/).filter(Boolean).length;
+          var total = Math.max(count, 1) * 5;
+          bar.max = total;
+          bar.value = 0;
+          bar.style.display = 'block';
+          var t = setInterval(function() {
+            bar.value = Math.min(bar.value + 1, bar.max);
+            if (bar.value >= bar.max) clearInterval(t);
+          }, 1000);
+        }
+        var btn = this.querySelector('button[type="submit"]');
+        if (btn) { btn.disabled = true; }
+      });
       }
 
       var spotifyForm = document.querySelector('form[action="{{ url_for('multi_spotify_download') }}"]');
       if (spotifyForm) {
-        spotifyForm.addEventListener('submit', function() {
-          console.log('Submitting multi-spotify-download, URLs:', document.querySelector('textarea[name="multi_urls_spotify"]').value);
-          var status = document.getElementById('multi-status-spotify');
-          if (status) { status.style.display = 'block'; }
-          var bar = document.getElementById('multi-progress-spotify');
-          if (bar) { bar.removeAttribute('value'); bar.style.display = 'block'; }
-          var btn = this.querySelector('button[type="submit"]');
-          if (btn) { btn.disabled = true; }
-        });
+      spotifyForm.addEventListener('submit', function() {
+        console.log('Submitting multi-spotify-download, URLs:', document.querySelector('textarea[name="multi_urls_spotify"]').value);
+        var status = document.getElementById('multi-status-spotify');
+        if (status) { status.style.display = 'block'; }
+        var bar = document.getElementById('multi-progress-spotify');
+        if (bar) {
+          var count = document.querySelector('textarea[name="multi_urls_spotify"]').value
+                       .split(/\r?\n/).filter(Boolean).length;
+          var total = Math.max(count, 1) * 5;
+          bar.max = total;
+          bar.value = 0;
+          bar.style.display = 'block';
+          var t = setInterval(function() {
+            bar.value = Math.min(bar.value + 1, bar.max);
+            if (bar.value >= bar.max) clearInterval(t);
+          }, 1000);
+        }
+        var btn = this.querySelector('button[type="submit"]');
+        if (btn) { btn.disabled = true; }
+      });
       }
     });
   </script>
