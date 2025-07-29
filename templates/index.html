@@ -156,7 +156,10 @@
           bar.style.display = 'block';
           var t = setInterval(function() {
             bar.value = Math.min(bar.value + 1, bar.max);
-            if (bar.value >= bar.max) clearInterval(t);
+            if (bar.value >= bar.max) {
+              clearInterval(t);
+              bar.style.display = 'none';
+            }
           }, 1000);
         }
       });
@@ -192,7 +195,10 @@
           bar.style.display = 'block';
           var t = setInterval(function() {
             bar.value = Math.min(bar.value + 1, bar.max);
-            if (bar.value >= bar.max) clearInterval(t);
+            if (bar.value >= bar.max) {
+              clearInterval(t);
+              bar.style.display = 'none';
+            }
           }, 1000);
         }
         var btn = this.querySelector('button[type="submit"]');
@@ -216,7 +222,10 @@
           bar.style.display = 'block';
           var t = setInterval(function() {
             bar.value = Math.min(bar.value + 1, bar.max);
-            if (bar.value >= bar.max) clearInterval(t);
+            if (bar.value >= bar.max) {
+              clearInterval(t);
+              bar.style.display = 'none';
+            }
           }, 1000);
         }
         var btn = this.querySelector('button[type="submit"]');
@@ -240,7 +249,10 @@
           bar.style.display = 'block';
           var t = setInterval(function() {
             bar.value = Math.min(bar.value + 1, bar.max);
-            if (bar.value >= bar.max) clearInterval(t);
+            if (bar.value >= bar.max) {
+              clearInterval(t);
+              bar.style.display = 'none';
+            }
           }, 1000);
         }
         var btn = this.querySelector('button[type="submit"]');
