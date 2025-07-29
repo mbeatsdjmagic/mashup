@@ -186,13 +186,13 @@ def main():
             # Apply start/end fades and crossfade between clips
             if mode == 'audio':
                 if idx == 1 and args.start_fade > 0:
-                    clip = clip.fx(AudioFadeIn, args.start_fade)
+                    clip = AudioFadeIn(clip, args.start_fade)
                 if idx > 1 and args.fade_in > 0:
-                    clip = clip.fx(AudioFadeIn, args.fade_in)
+                    clip = AudioFadeIn(clip, args.fade_in)
                 if idx < total and args.fade_out > 0:
-                    clip = clip.fx(AudioFadeOut, args.fade_out)
+                    clip = AudioFadeOut(clip, args.fade_out)
                 if idx == total and args.end_fade > 0:
-                    clip = clip.fx(AudioFadeOut, args.end_fade)
+                    clip = AudioFadeOut(clip, args.end_fade)
             else:
                 if idx == 1 and args.start_fade > 0:
                     clip = clip.fx(AudioFadeIn, args.start_fade)
