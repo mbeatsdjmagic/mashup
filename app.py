@@ -49,10 +49,13 @@ def index():
     multi_download_url_spotify = None
     multi_urls_spotify = ''
     if request.method == 'POST':
-        pause = request.form.get('pause', '').strip()
-        fade = request.form.get('fade', '').strip()
-        segments = request.form.get('segments', '').strip()
-        output_name = request.form.get('output_name', '').strip() or 'mashup_combined'
+        pause = request.form.get('pause', '0').strip()
+        start_fade = request.form.get('start_fade', '0').strip()
+        fade_out   = request.form.get('fade_out', '0').strip()
+        fade_in    = request.form.get('fade_in', '0').strip()
+        end_fade   = request.form.get('end_fade', '0').strip()
+        segments   = request.form.get('segments', '').strip()
+        output_name = request.form.get('output_name', '').strip() or 'audio_cut_join_out'
         segments_text = segments.splitlines()
 
         # Determine job ID (reuse if re-running, otherwise generate new)
