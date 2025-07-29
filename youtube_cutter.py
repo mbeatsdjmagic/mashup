@@ -185,14 +185,17 @@ def main():
                 sys.exit("Cannot mix audio and video segments")
             # Apply start/end fades and crossfade between clips
             if mode == 'audio':
+                effects = []
                 if idx == 1 and args.start_fade > 0:
-                    clip = AudioFadeIn(clip, args.start_fade)
+                    effects.append(AudioFadeIn(args.start_fade))
                 if idx > 1 and args.fade_in > 0:
-                    clip = AudioFadeIn(clip, args.fade_in)
+                    effects.append(AudioFadeIn(args.fade_in))
                 if idx < total and args.fade_out > 0:
-                    clip = AudioFadeOut(clip, args.fade_out)
+                    effects.append(AudioFadeOut(args.fade_out))
                 if idx == total and args.end_fade > 0:
-                    clip = AudioFadeOut(clip, args.end_fade)
+                    effects.append(AudioFadeOut(args.end_fade))
+                if effects:
+                    clip = clip.with_effects(effects)
             else:
                 if idx == 1 and args.start_fade > 0:
                     clip = clip.fx(AudioFadeIn, args.start_fade)
