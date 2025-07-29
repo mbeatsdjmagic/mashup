@@ -77,8 +77,8 @@ def index():
             existing = existing[:9]
         uploaded_names = existing
 
-        # Build args list (file_or_URL [start] [end]); missing times will be handled by the cutter
-        args = [pause, fade]
+        # Build args list: pause, start_fade, fade_out, fade_in, end_fade, then segment tokens
+        args = [pause, start_fade, fade_out, fade_in, end_fade]
         for line in segments_text:
             parts = line.strip().split()
             if parts:
