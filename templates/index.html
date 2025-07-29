@@ -13,14 +13,23 @@
 <body>
   <h1>YouTube Cutter</h1>
   <form method="post" enctype="multipart/form-data">
-    <label>Pause (seconds):
-      <input name="pause" required value="{{ pause|default('') }}">
+    <label>Pause between Songs (seconds):
+      <input name="pause" required value="{{ pause|default('0') }}">
     </label><br><br>
-    <label>Fade (seconds):
-      <input name="fade" required value="{{ fade|default('') }}">
+    <label>Start Fade (seconds):
+      <input name="start_fade" required value="{{ start_fade|default('0') }}">
+    </label><br><br>
+    <label>Fade Out between songs (seconds):
+      <input name="fade_out" required value="{{ fade_out|default('0') }}">
+    </label><br><br>
+    <label>Fade In between songs (seconds):
+      <input name="fade_in" required value="{{ fade_in|default('0') }}">
+    </label><br><br>
+    <label>End Fade (seconds):
+      <input name="end_fade" required value="{{ end_fade|default('0') }}">
     </label><br><br>
     <label>Output filename (without extension):
-      <input name="output_name" required value="{{ output_name|default('mashup_combined') }}">
+      <input name="output_name" required value="{{ output_name|default('audio_cut_join_out') }}">
     </label><br><br>
     <input type="hidden" name="job_id" value="{{ job_id|default('') }}">
     <label>Upload MP3 files (optional):
