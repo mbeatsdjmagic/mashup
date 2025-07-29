@@ -39,6 +39,7 @@
     <textarea name="segments" rows="6" placeholder="kala_chasma.mp3 00:35 00:49">{{ segments|default('') }}</textarea><br>
     <button type="submit">Run</button>
     <button type="reset">Clear</button>
+    <progress id="main-progress" max="100" style="width:100%; display:none;"></progress>
   </form>
 
   {% if logs %}
@@ -60,6 +61,7 @@
     <label>Youtube URLs (one per line):</label><br>
     <textarea name="multi_urls" rows="6">{{ multi_urls|default('') }}</textarea><br>
     <button type="submit">Download &amp; ZIP</button>
+    <progress id="multi-progress" max="100" style="width:100%; display:none;"></progress>
   </form>
 
   <div id="multi-status" style="display:none; margin-top:0.5em; color: #00529B;">
@@ -81,6 +83,7 @@
     <label>Youtube URLs (one per line):</label><br>
     <textarea name="multi_urls_audio" rows="6">{{ multi_urls_audio|default('') }}</textarea><br>
     <button type="submit">Download Audio &amp; ZIP</button>
+    <progress id="multi-progress-audio" max="100" style="width:100%; display:none;"></progress>
   </form>
   <div id="multi-status-audio" style="display:none; margin-top:0.5em; color: #00529B;">
     <strong>Downloading audio—please wait...</strong>
@@ -101,6 +104,7 @@
     <label>Spotify URLs (one per line):</label><br>
     <textarea name="multi_urls_spotify" rows="6">{{ multi_urls_spotify|default('') }}</textarea><br>
     <button type="submit">Download Spotify Audio &amp; ZIP</button>
+    <progress id="multi-progress-spotify" max="100" style="width:100%; display:none;"></progress>
   </form>
   <div id="multi-status-spotify" style="display:none; margin-top:0.5em; color: #00529B;">
     <strong>Downloading Spotify audio—please wait...</strong>
@@ -137,6 +141,14 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      // Show progress bar when submitting main form
+      var mainForm = document.querySelector('form[enctype]');
+      if (mainForm) {
+        mainForm.addEventListener('submit', function() {
+          var bar = document.getElementById('main-progress');
+          if (bar) { bar.removeAttribute('value'); bar.style.display = 'block'; }
+        });
+      }
       // MP3 uploader -> segments autofill
       var fileInput = document.querySelector('input[name="files"]');
       var textarea = document.querySelector('textarea[name="segments"]');
@@ -158,6 +170,8 @@
           console.log('Submitting multi-download, URLs:', document.querySelector('textarea[name="multi_urls"]').value);
           var status = document.getElementById('multi-status');
           if (status) { status.style.display = 'block'; }
+          var bar = document.getElementById('multi-progress');
+          if (bar) { bar.removeAttribute('value'); bar.style.display = 'block'; }
           var btn = this.querySelector('button[type="submit"]');
           if (btn) { btn.disabled = true; }
         });
@@ -169,6 +183,8 @@
           console.log('Submitting multi-audio-download, URLs:', document.querySelector('textarea[name="multi_urls_audio"]').value);
           var status = document.getElementById('multi-status-audio');
           if (status) { status.style.display = 'block'; }
+          var bar = document.getElementById('multi-progress-audio');
+          if (bar) { bar.removeAttribute('value'); bar.style.display = 'block'; }
           var btn = this.querySelector('button[type="submit"]');
           if (btn) { btn.disabled = true; }
         });
@@ -180,6 +196,8 @@
           console.log('Submitting multi-spotify-download, URLs:', document.querySelector('textarea[name="multi_urls_spotify"]').value);
           var status = document.getElementById('multi-status-spotify');
           if (status) { status.style.display = 'block'; }
+          var bar = document.getElementById('multi-progress-spotify');
+          if (bar) { bar.removeAttribute('value'); bar.style.display = 'block'; }
           var btn = this.querySelector('button[type="submit"]');
           if (btn) { btn.disabled = true; }
         });
