@@ -9,6 +9,9 @@ import uuid
 import subprocess
 from flask import Flask, render_template, request, send_from_directory, redirect, url_for
 from werkzeug.utils import secure_filename
+from mutagen.easyid3 import EasyID3
+from mutagen.id3 import ID3NoHeaderError
+from mutagen.mp3 import MP3
 import zipfile
 import re
 import sys
@@ -30,6 +33,7 @@ def index():
     pause = ''
     fade = ''
     segments = ''
+    output_name = ''
     # multi-downloader video state
     multi_logs = None
     multi_download_url = None
@@ -46,6 +50,7 @@ def index():
         pause = request.form.get('pause', '').strip()
         fade = request.form.get('fade', '').strip()
         segments = request.form.get('segments', '').strip()
+        output_name = request.form.get('output_name', '').strip() or 'mashup_combined'
         segments_text = segments.splitlines()
 
         # Determine job ID (reuse if re-running, otherwise generate new)
@@ -70,17 +75,40 @@ def index():
             existing = existing[:9]
         uploaded_names = existing
 
-        # Build args list, substituting uploaded files paths if used
+        # Build args list, substituting uploaded files paths; allow missing times for full-length audio
         args = [pause, fade]
         for line in segments_text:
             parts = line.strip().split()
-            if len(parts) == 3:
-                if parts[0] in uploaded_names:
-                    parts[0] = os.path.join(out_dir, parts[0])
+            if not parts:
+                continue
+            name = parts[0]
+            # Local uploaded MP3: default times if missing
+            if name in uploaded_names:
+                src = os.path.join(out_dir, name)
+                # get duration
+                try:
+                    dur = MP3(src).info.length
+                except Exception:
+                    dur = None
+                if len(parts) == 1:
+                    start = '0'
+                    end = str(int(dur)) if dur is not None else ''
+                elif len(parts) == 2:
+                    start = parts[1]
+                    end = str(int(dur)) if dur is not None else ''
+                else:
+                    start = parts[1]
+                    end = parts[2]
+                if end:
+                    args.extend([src, start, end])
+            else:
+                # remote URL or external file: require three fields
+                if len(parts) != 3:
+                    continue
                 args.extend(parts)
 
-        # Base path for output file (will result in mashup_combined.mp3)
-        out_base = os.path.join(out_dir, 'mashup_combined')
+        # Base path for output file (filename will be output_name.ext)
+        out_base = os.path.join(out_dir, output_name)
 
         # Invoke youtube_cutter script
         cmd = ['python3', 'youtube_cutter.py'] + args + ['-o', out_base]
@@ -93,7 +121,22 @@ def index():
         basename = os.path.basename(out_base)
         out_candidates = [f for f in files_in_out if f.startswith(basename)]
         if out_candidates:
-            download_url = f'/download/{job_id}/{out_candidates[0]}'
+            out_fname = out_candidates[0]
+            # Update MP3 metadata title tag to filename (without extension)
+            if out_fname.lower().endswith('.mp3'):
+                try:
+                    file_path = os.path.join(out_dir, out_fname)
+                    song_title = os.path.splitext(out_fname)[0]
+                    try:
+                        audio = EasyID3(file_path)
+                    except ID3NoHeaderError:
+                        audio = EasyID3()
+                        audio.save(file_path)
+                    audio['title'] = song_title
+                    audio.save(file_path)
+                except Exception as e:
+                    logs = (logs or '') + f"\nError updating metadata for {out_fname}: {e}"
+            download_url = f'/download/{job_id}/{out_fname}'
         # prepend any warnings to logs
         if warn_msgs:
             logs = '\n'.join(warn_msgs + ([logs] if logs else []))
@@ -106,6 +149,7 @@ def index():
         pause=pause,
         fade=fade,
         segments=segments,
+        output_name=output_name,
         multi_logs=multi_logs,
         multi_download_url=multi_download_url,
         multi_urls=multi_urls,
@@ -255,42 +299,30 @@ def multi_spotify_download():
     urls = [u.strip() for u in multi_urls_spotify.splitlines() if u.strip()]
     multi_logs_spotify = ''
 
-    for url in urls:
-        try:
-            cmd = [
-                'yt-dlp', '-x', '--audio-format', 'mp3',
-                '-o', os.path.join(out_dir, '%(title)s.%(ext)s'),
-                url,
-            ]
-            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT, text=True)
-            out, _ = proc.communicate()
-            multi_logs_spotify += out + '\n'
-        except Exception as exc:
-            multi_logs_spotify += f"Error downloading {url}: {exc}\n"
-
+    # Directly use spotdl for full-track download
     zip_name = 'spotify_audio_multi.zip'
     zip_path = os.path.join(out_dir, zip_name)
-    # Check downloaded mp3s, if empty try preview-url fallback
-    audio_files = [f for f in os.listdir(out_dir) if f.lower().endswith('.mp3')]
-    if not audio_files:
-        # Try spotdl per-URL if available
-        try:
-            import spotdl  # noqa: F401
-            multi_logs_spotify += "Attempting full-track download via spotdl...\n"
-            for url in urls:
-                try:
-                    subprocess.run(['spotdl', '--output', out_dir, url], check=True)
-                    multi_logs_spotify += f"Downloaded full track for {url}\n"
-                except subprocess.CalledProcessError as exc:
-                    multi_logs_spotify += f"spotdl failed for {url}: {exc}\n"
-            audio_files = [f for f in os.listdir(out_dir) if f.lower().endswith('.mp3')]
-        except ModuleNotFoundError:
-            multi_logs_spotify += "spotdl not installed; falling back to preview snippet...\n"
-        except Exception as exc:
-            multi_logs_spotify += f"spotdl download error: {exc}\n"
-    if not audio_files:
-        multi_logs_spotify += "No audio files downloaded; could be DRM-protected.\n"
+    audio_files = []
+    # Directly use spotdl for full-track download
+    try:
+        import spotdl  # noqa: F401
+        multi_logs_spotify += "Downloading full-track via spotdl...\n"
+        for url in urls:
+            subprocess.run([
+                'spotdl',
+                '--output', out_dir,
+                '--format', 'mp3',
+                '--bitrate', '320k',
+                'download',
+                url
+            ], check=True)
+            multi_logs_spotify += f"Downloaded full track for {url}\n"
+        audio_files = [f for f in os.listdir(out_dir) if f.lower().endswith('.mp3')]
+    except ModuleNotFoundError:
+        multi_logs_spotify += "spotdl not installed; install it to download Spotify tracks.\n"
+        audio_files = []
+    except Exception as exc:
+        multi_logs_spotify += f"spotdl download error: {exc}\n"
     try:
         with zipfile.ZipFile(zip_path, 'w') as zf:
             for fname in os.listdir(out_dir):

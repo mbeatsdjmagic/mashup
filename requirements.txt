@@ -3,3 +3,4 @@ pytube>=12.1.0
 pytube>=12.1.0
 moviepy>=1.0.0
 flask>=2.0.0
+mutagen>=1.45.1

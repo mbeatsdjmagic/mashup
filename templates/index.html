@@ -18,12 +18,15 @@
     <label>Fade (seconds):
       <input name="fade" required value="{{ fade|default('') }}">
     </label><br><br>
+    <label>Output filename (without extension):
+      <input name="output_name" required value="{{ output_name|default('mashup_combined') }}">
+    </label><br><br>
     <input type="hidden" name="job_id" value="{{ job_id|default('') }}">
     <label>Upload MP3 files (optional):
       <input type="file" name="files" accept=".mp3" multiple>
     </label><br><br>
-    <label>Segments (one per line, file/start/end):</label><br>
-    <textarea name="segments" rows="6">{{ segments|default('') }}</textarea><br>
+    <label>Segments (one per line). Example: kala_chasma.mp3 00:35 00:49</label><br>
+    <textarea name="segments" rows="6" placeholder="kala_chasma.mp3 00:35 00:49">{{ segments|default('') }}</textarea><br>
     <button type="submit">Run</button>
     <button type="reset">Clear</button>
   </form>
