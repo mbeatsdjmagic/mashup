@@ -154,9 +154,10 @@
           bar.max = total;
           bar.value = 0;
           bar.style.display = 'block';
+          var limit = Math.floor(bar.max * 0.95);
           var t = setInterval(function() {
-            bar.value = Math.min(bar.value + 1, bar.max);
-            if (bar.value >= bar.max) {
+            bar.value = Math.min(bar.value + 1, limit);
+            if (bar.value >= limit) {
               clearInterval(t);
               bar.style.display = 'none';
             }
@@ -193,9 +194,10 @@
           bar.max = total;
           bar.value = 0;
           bar.style.display = 'block';
+          var limit = Math.floor(bar.max * 0.95);
           var t = setInterval(function() {
-            bar.value = Math.min(bar.value + 1, bar.max);
-            if (bar.value >= bar.max) {
+            bar.value = Math.min(bar.value + 1, limit);
+            if (bar.value >= limit) {
               clearInterval(t);
               bar.style.display = 'none';
             }
@@ -220,9 +222,10 @@
           bar.max = total;
           bar.value = 0;
           bar.style.display = 'block';
+          var limit = Math.floor(bar.max * 0.95);
           var t = setInterval(function() {
-            bar.value = Math.min(bar.value + 1, bar.max);
-            if (bar.value >= bar.max) {
+            bar.value = Math.min(bar.value + 1, limit);
+            if (bar.value >= limit) {
               clearInterval(t);
               bar.style.display = 'none';
             }
@@ -247,9 +250,10 @@
           bar.max = total;
           bar.value = 0;
           bar.style.display = 'block';
+          var limit = Math.floor(bar.max * 0.95);
           var t = setInterval(function() {
-            bar.value = Math.min(bar.value + 1, bar.max);
-            if (bar.value >= bar.max) {
+            bar.value = Math.min(bar.value + 1, limit);
+            if (bar.value >= limit) {
               clearInterval(t);
               bar.style.display = 'none';
             }
