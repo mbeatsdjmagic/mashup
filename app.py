@@ -80,12 +80,17 @@ def index():
             existing = existing[:9]
         uploaded_names = existing
 
-        # Build args list: pause, start_fade, fade_out, fade_in, end_fade, then segment tokens
+        # Build args list: pause, start_fade, fade_out, fade_in, end_fade,
+        # then segment tokens (prefix local uploaded MP3 filenames with full path)
         args = [pause, start_fade, fade_out, fade_in, end_fade]
         for line in segments_text:
             parts = line.strip().split()
-            if parts:
-                args.extend(parts)
+            if not parts:
+                continue
+            name = parts[0]
+            if name in uploaded_names:
+                parts[0] = os.path.join(out_dir, name)
+            args.extend(parts)
 
         # Base path for output file (filename will be output_name.ext)
         out_base = os.path.join(out_dir, output_name)
